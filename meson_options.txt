@@ -1,0 +1,4 @@
+option('libch341a_debug', type: 'boolean', value : false)
+option('libch341a_debug_i2c', type: 'boolean', value : false)
+option('libch341a_debug_spi', type: 'boolean', value : false)
+option('libch341a_debug_gpio', type: 'boolean', value : false)

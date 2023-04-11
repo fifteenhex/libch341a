@@ -1,0 +1,35 @@
+name: Build
+run-name: ${{ github.actor }}
+on: [push]
+jobs:
+  build:
+    strategy:
+      matrix:
+        ch341a_debug: [ "true", "false" ]
+        ch341a_debug_i2c: [ "true", "false" ]
+        ch341a_debug_spi: [ "true", "false" ]
+        ch341a_debug_gpio: [ "true", "false" ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install deps
+        run: sudo apt-get install meson pkg-config libusb-dev libusb-1.0-0-dev git
+      - name: Fix subprojects
+        run: |
+         git clone https://github.com/fifteenhex/libdgpc.git
+         git clone https://github.com/fifteenhex/libusrio.git
+        working-directory: subprojects
+      - name: Setup
+        run: meson setup builddir
+      - name: Configure
+        run: |
+          meson configure
+          meson configure -Dlibch341a_debug=${{ matrix.ch341a_debug }}
+          meson configure -Dlibch341a_debug_i2c=${{ matrix.ch341a_debug_i2c }}
+          meson configure -Dlibch341a_debug_spi=${{ matrix.ch341a_debug_spi }}
+          meson configure -Dlibch341a_debug_gpio=${{ matrix.ch341a_debug_gpio }}
+        working-directory: builddir
+      - name: Compile
+        run: meson compile
+        working-directory: builddir

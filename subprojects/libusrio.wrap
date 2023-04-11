@@ -1,0 +1,7 @@
+[wrap-git]
+url = https://github.com/fifteenhex/libusrio.git
+revision = head
+depth = 1
+
+[provide]
+dependency_names = libusrio
