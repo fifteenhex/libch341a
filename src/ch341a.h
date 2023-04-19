@@ -11,8 +11,6 @@
 
 #include "libch341a.h"
 
-#define TAG "ch341a"
-
 #define DEFAULT_TIMEOUT			1000
 #define BULK_WRITE_ENDPOINT		0x02
 #define BULK_READ_ENDPOINT		0x82

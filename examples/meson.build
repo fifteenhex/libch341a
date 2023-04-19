@@ -28,4 +28,4 @@ spiepaper = executable(
     'spiepaper', 'spiepaper.c',
     include_directories : inc,
     link_with : link_libs,
-    dependencies: libusrio_dep)
+    dependencies: [libusrio_dep, libebogroll_dep])

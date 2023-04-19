@@ -12,14 +12,23 @@ cflags = cc.get_supported_arguments([
 add_project_arguments(cflags, language: 'c')
 add_project_arguments('-D_GNU_SOURCE', language: 'c')
 
+# Find dgpc. This should never be an installed library
 libdgpc_proj = subproject('libdgpc')
 libdgpc_dep = libdgpc_proj.get_variable('libdgpc_dep')
 log_macros_tmpl = libdgpc_proj.get_variable('log_macros_tmpl')
 
+# Find libusrio
 libusrio_dep = dependency('libusrio', required : false)
 if not libusrio_dep.found()
     libusrio_proj = subproject('libusrio')
     libusrio_dep = libusrio_proj.get_variable('libusrio_dep')
+endif
+
+# Find libebogroll
+libebogroll_dep = dependency('libebogroll', required : false)
+if not libebogroll_dep.found()
+    libebogroll_proj = subproject('libebogroll')
+    libebogroll_dep = libebogroll_proj.get_variable('libebogroll_dep')
 endif
 
 inc = include_directories('include')

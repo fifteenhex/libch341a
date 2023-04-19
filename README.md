@@ -16,5 +16,6 @@ that's cool.
 
 https://github.com/fifteenhex/libusrio
 
+## More info about the ch341a
 
 http://www.wch-ic.com/products/CH341.html
