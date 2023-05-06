@@ -14,7 +14,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: Install deps
-        run: sudo apt-get install meson pkg-config libusb-dev libusb-1.0-0-dev git
+        run: sudo apt-get install meson pkg-config libgpiod-dev libusb-1.0-0-dev git
       - name: Fix subprojects
         run: |
          git clone https://github.com/fifteenhex/libdgpc.git
