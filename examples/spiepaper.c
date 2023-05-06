@@ -38,12 +38,33 @@ int main (int argc, char **argv)
 	struct gdew042c37_data display_data;
 	gdew042c37_new(&display_data, &gpio, &ch341a_spi, RESET, BUSY, DC);
 
-	ebogroll_reset(&gdew042c37, &display_data);
+	if (ebogroll_reset(&gdew042c37, &display_data)) {
+		printf("failed to reset\n");
+		return 1;
+	}
+
 	sleep(1);
-	ebogroll_power_up(&gdew042c37, &display_data);
-	ebogroll_send_plane_data(&gdew042c37, &display_data, 0, tux_bw);
-	ebogroll_send_plane_data(&gdew042c37, &display_data, 1, tux_y);
-	ebogroll_refresh(&gdew042c37, &display_data);
+
+	if(ebogroll_power_up(&gdew042c37, &display_data)) {
+		printf("power up failed\n");
+		return 1;
+	}
+
+	if (ebogroll_send_plane_data(&gdew042c37, &display_data, 0, tux_bw)) {
+		printf("failed to send bw plane data\n");
+		return 1;
+	}
+
+	if (ebogroll_send_plane_data(&gdew042c37, &display_data, 1, tux_y)) {
+		printf("failed to send yellow plane data\n");
+		return 1;
+	}
+
+	if (ebogroll_refresh(&gdew042c37, &display_data)) {
+		printf("failed to trigger display refresh\n");
+		return 1;
+	}
+
 	ebogroll_power_down(&gdew042c37, &display_data);
 
 	spi_controller_shutdown(&ch341a_spi);

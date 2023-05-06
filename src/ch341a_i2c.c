@@ -23,14 +23,6 @@
 
 static struct i2c_client i2cdev_client;
 
-static int ch341a_drain(struct ch341a_handle *ch341a)
-{
-	uint8_t buff[32] = { 0 };
-	int ret = ch341a_usb_transf(ch341a, __func__, BULK_READ_ENDPOINT, buff, sizeof(buff));
-
-	return ret;
-}
-
 static int ch341a_i2c_init(const struct i2c_controller *i2c_controller,
 						   int(*log_cb)(int level, const char *tag, const char *restrict format,...),
 						   const char *connection)

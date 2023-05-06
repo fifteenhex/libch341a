@@ -13,6 +13,14 @@
 #include "ch341a.h"
 #include "ch341a_log.h"
 
+int ch341a_drain(struct ch341a_handle *ch341a)
+{
+	uint8_t buff[32] = { 0 };
+	int ret = ch341a_usb_transf(ch341a, __func__, BULK_READ_ENDPOINT, buff, sizeof(buff));
+
+	return ret;
+}
+
 static int ch341a_null_log_cb(int level, const char* tag, const char *restrict format, ...)
 {
 	return 0;

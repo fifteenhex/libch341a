@@ -15,9 +15,7 @@
 #define BULK_WRITE_ENDPOINT		0x02
 #define BULK_READ_ENDPOINT		0x82
 
-#define	 CH341_PACKET_LENGTH		0x20
-#define	 CH341_MAX_PACKETS			256
-#define	 CH341_MAX_PACKET_LEN		(CH341_PACKET_LENGTH * CH341_MAX_PACKETS)
+#define	 CH341A_EP_SIZE			32
 
 #define	 CH341A_CMD_SET_OUTPUT		0xA1
 #define	 CH341A_CMD_IO_ADDR			0xA2
@@ -81,5 +79,6 @@ int ch341a_config_stream(struct ch341a_handle *ch341a, unsigned int speed);
 void ch341a_close(struct ch341a_handle *ch341a);
 int ch341a_usb_transf(struct ch341a_handle *ch341a, const char *func,
 		uint8_t type, uint8_t *buf, int len);
+int ch341a_drain(struct ch341a_handle *ch341a);
 
 #endif /* __CH341_H__ */

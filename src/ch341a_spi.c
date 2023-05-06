@@ -14,7 +14,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <unistd.h>
 
+#include <cmdbuff.h>
 #include <spi_controller.h>
 #include <dgputil.h>
 
@@ -23,6 +25,8 @@
 #include "ch341a_gpio.h"
 
 #include "ch341a_spi_log.h"
+
+#define CH341A_SPI_MAX (CH341A_EP_SIZE - 1)
 
 static struct spi_client ch341a_client;
 
@@ -41,52 +45,48 @@ static uint8_t swap_byte(uint8_t x)
 	assert(ch341a)
 
 static int ch341a_spi_send_command(const struct spi_controller *spi_controller,
-		unsigned int writecnt, unsigned int readcnt, const unsigned char *writearr, unsigned char *readarr)
+		unsigned int writecnt,
+		unsigned int readcnt,
+		const unsigned char *writearr,
+		unsigned char *readarr)
 {
 	PREAMBLE(spi_controller);
+	uint8_t tmp[CH341A_SPI_MAX];
+	CMDBUFF(cmdbuff);
+	int ret = 0, total = writecnt + readcnt;
 
-	int32_t ret = 0;
+	assert(total <= CH341A_SPI_MAX);
 
-	/* How many packets ... */
-	const size_t packets = (writecnt + readcnt + CH341_PACKET_LENGTH - 2) / (CH341_PACKET_LENGTH - 1);
-
-	/* We pluck CS/timeout handling into the first packet thus we need to allocate one extra package. */
-	uint8_t wbuf[packets+1][CH341_PACKET_LENGTH];
-	uint8_t rbuf[writecnt + readcnt];
-	/* Initialize the write buffer to zero to prevent writing random stack contents to device. */
-	memset(wbuf[0], 0, CH341_PACKET_LENGTH);
-
-	uint8_t *ptr = wbuf[0];
-	/* CS usage is optimized by doing both transitions in one packet.
-	 * Final transition to deselected state is in the pin disable. */
-	unsigned int write_left = writecnt;
-	unsigned int read_left = readcnt;
-	unsigned int p;
-	for (p = 0; p < packets; p++) {
-		unsigned int write_now = min(CH341_PACKET_LENGTH - 1, write_left);
-		unsigned int read_now = min ((CH341_PACKET_LENGTH - 1) - write_now, read_left);
-		ptr = wbuf[p + 1];
-		*ptr++ = CH341A_CMD_SPI_STREAM;
-		unsigned int i;
-		for (i = 0; i < write_now; ++i)
-			*ptr++ = swap_byte(*writearr++);
-		if (read_now) {
-			memset(ptr, 0xFF, read_now);
-			read_left -= read_now;
-		}
-		write_left -= write_now;
+	/*
+	 * It seems like an SPI transfer works by setting the stream
+	 * once and then the data. The write size to the endpoint
+	 * represents the length?
+	 */
+	cmdbuff_push(&cmdbuff, CH341A_CMD_SPI_STREAM);
+	for (int i = 0; i < writecnt; i++) {
+		cmdbuff_push(&cmdbuff, swap_byte(*writearr++));
 	}
 
-	ret = ch341a_usb_transf(ch341a, __func__, BULK_WRITE_ENDPOINT, wbuf[0], CH341_PACKET_LENGTH + packets + writecnt + readcnt);
-	ret = ch341a_usb_transf(ch341a, __func__, BULK_READ_ENDPOINT, rbuf, writecnt + readcnt);
+	//cmdbuff_push(&cmdbuff, CH341A_CMD_SPI_STREAM);
+	for (int i = 0; i < readcnt; i++) {
+		cmdbuff_push(&cmdbuff, 0xff);
+	}
+
+	ret = ch341a_usb_transf(ch341a, __func__, BULK_WRITE_ENDPOINT,
+			cmdbuff_ptr(&cmdbuff),  cmdbuff_size(&cmdbuff));
+	//usleep(10000);
+	ret = ch341a_usb_transf(ch341a, __func__, BULK_READ_ENDPOINT,
+			tmp, total);
+	if (ret < 0)
+		ch341a_spi_err(ch341a, "Failed to read %d bytes back: %d\n",
+			total, ret);
 
 	if (ret < 0)
 		return -1;
 
-	unsigned int i;
-	for (i = 0; i < readcnt; i++) {
-		*readarr++ = swap_byte(rbuf[writecnt + i]);
-	}
+	/* Swap bytes and fill the output */
+	for (int i = 0; i < readcnt; i++)
+		*readarr++ = swap_byte(tmp[writecnt + i]);
 
 	return 0;
 }
@@ -139,6 +139,8 @@ static int ch341a_spi_init(
 
 	spi_controller_set_client_data(spi_controller, ch341a, false);
 
+	ch341a_drain(ch341a);
+
 	/* make sure CS is in the default state */
 	ch341a_cs_release(spi_controller);
 
@@ -147,7 +149,7 @@ static int ch341a_spi_init(
 
 static int ch341a_spi_max_transfer(const struct spi_controller *spi_controller)
 {
-	return 8;
+	return CH341A_SPI_MAX;
 }
 
 const struct spi_controller ch341a_spi = {
