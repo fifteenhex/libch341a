@@ -18,6 +18,7 @@ jobs:
       - name: Fix subprojects
         run: |
          git clone https://github.com/fifteenhex/libdgpc.git
+         git clone https://github.com/fifteenhex/libebogroll.git
          git clone https://github.com/fifteenhex/libusrio.git
         working-directory: subprojects
       - name: Setup
