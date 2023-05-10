@@ -162,9 +162,9 @@ static int ch341a_do_transaction(const struct i2c_controller *i2c_controller,
 			data = buff;
 			if (checkack) {
 				uint8_t ackbyte = data[0];
-
 				ch341a_i2c_dbg(ch341a, "ack byte: %02x\n", ackbyte);
-				if (ackbyte & CH341A_I2C_NAK) {
+				if ((ch341a->dev_info->is_ch347 && !(ackbyte && CH347_I2C_ACK)) ||
+						(!ch341a->dev_info->is_ch347 && (ackbyte & CH341A_I2C_NAK))) {
 					ch341a_i2c_dbg(ch341a, "NAK\n");
 					ch341a_abort(ch341a);
 					return -EIO;

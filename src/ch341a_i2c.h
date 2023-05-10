@@ -77,5 +77,6 @@
 #define mCH341A_CMD_I2C_STM_END		0x00
 
 #define CH341A_I2C_NAK				(1 << 7)
+#define CH347_I2C_ACK				1
 
 #endif /* __CH341A_I2C_H__ */
