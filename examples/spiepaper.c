@@ -17,7 +17,7 @@
 #include "tux.h"
 
 #define RESET	1
-#define DC		2
+#define DC	2
 #define BUSY	7
 
 int main (int argc, char **argv)
@@ -29,14 +29,13 @@ int main (int argc, char **argv)
 		return ret;
 
 	struct ch341a_handle *ch341a = spi_controller_get_client_data(&ch341a_spi);
-	struct gpio_controller gpio;
-	ch341a_gpio_from_handle(ch341a, &gpio);
+	const struct gpio_controller *gpio = &ch341a_gpio;
 
 	/* set initial state for DC */
-	gpio_controller_set_value(&gpio, DC, 0);
+	gpio_controller_set_value(gpio, ch341a, DC, 0);
 
 	struct gdew042c37_data display_data;
-	gdew042c37_new(&display_data, &gpio, &ch341a_spi, RESET, BUSY, DC);
+	gdew042c37_new(&display_data, gpio, ch341a, &ch341a_spi, RESET, BUSY, DC);
 
 	if (ebogroll_reset(&gdew042c37, &display_data)) {
 		printf("failed to reset\n");

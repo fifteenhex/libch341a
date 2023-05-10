@@ -86,21 +86,24 @@ int _ch341a_gpio_set_value(struct ch341a_handle *ch341a, int line, bool value)
 
 
 /* libusrio api */
-static int ch341a_gpio_set_dir(const struct gpio_controller *gpio_controller, int line, bool out)
+static int ch341a_gpio_set_dir(const struct gpio_controller *gpio_controller,
+		void *priv, int line, bool out)
 {
 	return 0;
 }
 
-static int ch341a_gpio_set_value(const struct gpio_controller *gpio_controller, int line, bool value)
+static int ch341a_gpio_set_value(const struct gpio_controller *gpio_controller,
+		void *priv, int line, bool value)
 {
-	struct ch341a_handle *ch341a = gpio_controller->priv;
+	struct ch341a_handle *ch341a = priv;
 
 	return _ch341a_gpio_set_value(ch341a, line, value);
 }
 
-static int ch341a_gpio_get_value(const struct gpio_controller *gpio_controller, int line)
+static int ch341a_gpio_get_value(const struct gpio_controller *gpio_controller,
+		void *priv, int line)
 {
-	struct ch341a_handle *ch341a = gpio_controller->priv;
+	struct ch341a_handle *ch341a = priv;
 	uint8_t value;
 	int ret;
 
@@ -119,11 +122,3 @@ const struct gpio_controller ch341a_gpio = {
 	.set_value = ch341a_gpio_set_value,
 	.get_value = ch341a_gpio_get_value,
 };
-
-int ch341a_gpio_from_handle(struct ch341a_handle *ch341a, struct gpio_controller *gpio_controller)
-{
-	memcpy(gpio_controller, &ch341a_gpio, sizeof(ch341a_gpio));
-	gpio_controller->priv = ch341a;
-
-	return 0;
-}

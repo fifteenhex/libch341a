@@ -30,8 +30,10 @@ int ch341a_usb_transf(struct ch341a_handle *ch341a, const char *func,
 					  uint8_t type, uint8_t *buf, int len)
 {
 	int ret, actuallen = 0;
+	unsigned char ep = (type == BULK_WRITE_ENDPOINT) ?
+			ch341a->dev_info->ep_out : ch341a->dev_info->ep_in;
 
-	ret = libusb_bulk_transfer(ch341a->handle, type, buf, len, &actuallen, DEFAULT_TIMEOUT);
+	ret = libusb_bulk_transfer(ch341a->handle, ep, buf, len, &actuallen, DEFAULT_TIMEOUT);
 	if (ret < 0) {
 		ch341a_err(ch341a, "%s: Failed to %s %d bytes '%s(%d)'\n", func,
 			(type == BULK_WRITE_ENDPOINT) ? "write" : "read", len, libusb_strerror(ret), ret);
@@ -131,16 +133,26 @@ struct ch341a_handle *ch341a_open(int (*log_cb)(int level, const char *tag, cons
 	libusb_set_debug(NULL, 3); // Enable information, warning and error messages (only).
 #endif
 
-	uint16_t vid = devs_ch341a_spi[0].vendor_id;
-	uint16_t pid = devs_ch341a_spi[0].device_id;
-	ch341a->handle = libusb_open_device_with_vid_pid(NULL, vid, pid);
-	if (ch341a->handle == NULL) {
+	for (int i = 0; i < array_size(devs_ch341a_spi); i++) {
+		uint16_t vid = devs_ch341a_spi[i].vendor_id;
+		uint16_t pid = devs_ch341a_spi[i].device_id;
+
+		ch341a->handle = libusb_open_device_with_vid_pid(NULL, vid, pid);
+
+		if (ch341a->handle) {
+			ch341a_info(ch341a, "Found CH341A-like device: %s - %s\n",
+				devs_ch341a_spi[i].vendor_name, devs_ch341a_spi[i].device_name);
+			ch341a->dev_info = &devs_ch341a_spi[i];
+			break;
+		}
+
 		ch341a_err(ch341a, "Couldn't open device %04x:%04x.\n", vid, pid);
-		return err_ptr(-1);
 	}
 
-	ch341a_info(ch341a, "Found programmer device: %s - %s\n",
-			devs_ch341a_spi[0].vendor_name, devs_ch341a_spi[0].device_name);
+	if (!ch341a) {
+		ch341a_info(ch341a, "No CH341A-like device found\n");
+		return err_ptr(-ENODEV);
+	}
 
 #ifdef __gnu_linux__
 	/* libusb_detach_kernel_driver() and friends basically only work on Linux. We simply try to detach on Linux

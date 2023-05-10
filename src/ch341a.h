@@ -12,9 +12,9 @@
 #include "libch341a.h"
 
 #define DEFAULT_TIMEOUT			1000
+
 #define BULK_WRITE_ENDPOINT		0x02
 #define BULK_READ_ENDPOINT		0x82
-
 #define	 CH341A_EP_SIZE			32
 
 #define	 CH341A_CMD_SET_OUTPUT		0xA1
@@ -48,16 +48,26 @@
 #define	 CH341A_STM_I2C_750K	0x03
 #define	 CH341A_STM_SPI_DBL		0x04
 
-struct dev_entry {
-	uint16_t vendor_id;
-	uint16_t device_id;
-	const char *vendor_name;
-	const char *device_name;
-};
-
-static const struct dev_entry devs_ch341a_spi[] = {
-	{0x1A86, 0x5512, "WinChipHead (WCH)", "CH341A"},
-	{0},
+static const struct ch341a_dev_entry devs_ch341a_spi[] = {
+	{
+		.vendor_id = 0x1a86,
+		.device_id = 0x5512,
+		.vendor_name = "WinChipHead (WCH)",
+		.device_name = "CH341A",
+		.ep_size = 32,
+		.ep_out = 0x02,
+		.ep_in = 0x82,
+	},
+	{
+		.vendor_id = 0x1a86,
+		.device_id = 0x55db,
+		.vendor_name = "WinChipHead (WCH)",
+		.device_name = "CH347",
+		.ep_size = 512,
+		.ep_out = 0x06,
+		.ep_in = 0x86,
+		.is_ch347 = true,
+	},
 };
 
 /* The assumed map between UIO command bits, pins on CH341A chip and pins on SPI chip:

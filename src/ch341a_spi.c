@@ -128,8 +128,8 @@ static int ch341a_spi_init(
 {
 	struct ch341a_handle *ch341a = ch341a_open(log_cb);
 
-	if (!ch341a)
-		return -ENODEV;
+	if (is_err_ptr(ch341a))
+		return ptr_err(ch341a);
 
 	if ((ch341a_config_stream(ch341a, CH341A_STM_I2C_750K) < 0) ||
 			(ch341a_enable_pins(ch341a, true) < 0)) {
