@@ -13,6 +13,30 @@
 #include "ch341a.h"
 #include "ch341a_log.h"
 
+static const struct ch341a_dev_entry devs_ch341a_spi[] = {
+	{
+		.vendor_id = 0x1a86,
+		.device_id = 0x5512,
+		.vendor_name = "WinChipHead (WCH)",
+		.device_name = "CH341A",
+		.ep_size = 32,
+		.ep_out = 0x02,
+		.ep_in = 0x82,
+		.spi_controller = &ch341a_spi,
+	},
+	{
+		.vendor_id = 0x1a86,
+		.device_id = 0x55db,
+		.vendor_name = "WinChipHead (WCH)",
+		.device_name = "CH347",
+		.ep_size = 512,
+		.ep_out = 0x06,
+		.ep_in = 0x86,
+		.is_ch347 = true,
+		.spi_controller = &ch347_spi,
+	},
+};
+
 int ch341a_drain(struct ch341a_handle *ch341a)
 {
 	uint8_t buff[32] = { 0 };
@@ -218,3 +242,60 @@ void ch341a_close(struct ch341a_handle *ch341a)
 	libusb_close(ch341a->handle);
 	libusb_exit(NULL);
 }
+
+static int ch341a_mfd_open(const struct libusrio_mfd *mfd, int(*log_cb)(int level, const char* tag, const char *restrict format,...),
+		const char *connection_string, void **priv)
+{
+	struct ch341a_handle *ch341a = ch341a_open(log_cb);
+
+	if (is_err_ptr(ch341a))
+		return ptr_err(ch341a);
+
+	*priv = ch341a;
+
+	return 0;
+}
+
+static const struct i2c_controller *ch341a_mfd_get_i2c(const struct libusrio_mfd *mfd, void* priv)
+{
+	return &ch341a_i2c;
+}
+
+static const struct gpio_controller *ch341a_mfd_get_gpio(const struct libusrio_mfd *mfd, void* priv)
+{
+	return &ch341a_gpio;
+}
+
+static const struct spi_controller *ch341a_mfd_get_spi(const struct libusrio_mfd *mfd, void* priv)
+{
+	struct ch341a_handle *ch341a = priv;
+
+	return ch341a->dev_info->spi_controller;
+}
+
+int ch341a_mfd_set_flags(const struct libusrio_mfd *mfd, void *priv, unsigned int flags)
+{
+	struct ch341a_handle *ch341a = priv;
+
+	ch341a->mfd_flags = flags;
+
+	return 0;
+}
+
+int ch341a_mfd_get_flags(const struct libusrio_mfd *mfd, void *priv, unsigned int *flags)
+{
+	struct ch341a_handle *ch341a = priv;
+
+	*flags = ch341a->mfd_flags;
+
+	return 0;
+}
+
+const struct libusrio_mfd ch341a_mfd = {
+	.open = ch341a_mfd_open,
+	.get_i2c = ch341a_mfd_get_i2c,
+	.get_gpio = ch341a_mfd_get_gpio,
+	.get_spi = ch341a_mfd_get_spi,
+	.set_flags = ch341a_mfd_set_flags,
+	.get_flags = ch341a_mfd_get_flags,
+};

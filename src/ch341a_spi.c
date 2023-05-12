@@ -26,9 +26,8 @@
 
 #include "ch341a_spi_log.h"
 
+#define	 CH341A_CMD_SPI_STREAM		0xA8
 #define CH341A_SPI_MAX (CH341A_EP_SIZE - 1)
-
-static struct spi_client ch341a_client;
 
 /* ch341 requires LSB first, swap the bit order before send and after receive */
 static uint8_t swap_byte(uint8_t x)
@@ -39,18 +38,19 @@ static uint8_t swap_byte(uint8_t x)
 	return x;
 }
 
-#define PREAMBLE(_sc) \
+#define PREAMBLE(_sc, _priv) \
 	struct ch341a_handle *ch341a; \
-	ch341a = spi_controller_get_client_data(_sc); \
+	ch341a = _priv; \
 	assert(ch341a)
 
 static int ch341a_spi_send_command(const struct spi_controller *spi_controller,
 		unsigned int writecnt,
 		unsigned int readcnt,
 		const unsigned char *writearr,
-		unsigned char *readarr)
+		unsigned char *readarr,
+		void *priv)
 {
-	PREAMBLE(spi_controller);
+	PREAMBLE(spi_controller, priv);
 	uint8_t tmp[CH341A_SPI_MAX];
 	CMDBUFF(cmdbuff);
 	int ret = 0, total = writecnt + readcnt;
@@ -93,9 +93,9 @@ static int ch341a_spi_send_command(const struct spi_controller *spi_controller,
 
 #define CS0_LINE	0
 
-static int ch341a_cs_assert(const struct spi_controller *spi_controller)
+static int ch341a_cs_assert(const struct spi_controller *spi_controller, void *priv)
 {
-	PREAMBLE(spi_controller);
+	PREAMBLE(spi_controller, priv);
 
 	_ch341a_gpio_set_value(ch341a, CS0_LINE, false);
 
@@ -103,18 +103,18 @@ static int ch341a_cs_assert(const struct spi_controller *spi_controller)
 }
 
 
-static int ch341a_cs_release(const struct spi_controller *spi_controller)
+static int ch341a_cs_release(const struct spi_controller *spi_controller, void *priv)
 {
-	PREAMBLE(spi_controller);
+	PREAMBLE(spi_controller, priv);
 
 	_ch341a_gpio_set_value(ch341a, CS0_LINE, true);
 
 	return 0;
 }
 
-static int ch341a_spi_shutdown(const struct spi_controller *spi_controller)
+static int ch341a_spi_close(const struct spi_controller *spi_controller, void *priv)
 {
-	PREAMBLE(spi_controller);
+	PREAMBLE(spi_controller, priv);
 
 	ch341a_close(ch341a);
 
@@ -124,12 +124,9 @@ static int ch341a_spi_shutdown(const struct spi_controller *spi_controller)
 static int ch341a_spi_init(
 		const struct spi_controller *spi_controller,
 		int(*log_cb)(int level, const char *tag, const char *restrict format,...),
-		const char *connection)
+		void *priv)
 {
-	struct ch341a_handle *ch341a = ch341a_open(log_cb);
-
-	if (is_err_ptr(ch341a))
-		return ptr_err(ch341a);
+	struct ch341a_handle *ch341a = priv;
 
 	if ((ch341a_config_stream(ch341a, CH341A_STM_I2C_750K) < 0) ||
 			(ch341a_enable_pins(ch341a, true) < 0)) {
@@ -137,28 +134,40 @@ static int ch341a_spi_init(
 		return -EIO;
 	}
 
-	spi_controller_set_client_data(spi_controller, ch341a, false);
-
 	ch341a_drain(ch341a);
 
 	/* make sure CS is in the default state */
-	ch341a_cs_release(spi_controller);
+	ch341a_cs_release(spi_controller, priv);
 
 	return 0;
 }
 
-static int ch341a_spi_max_transfer(const struct spi_controller *spi_controller)
+static int ch341a_spi_open(
+		const struct spi_controller *spi_controller,
+		int(*log_cb)(int level, const char *tag, const char *restrict format,...),
+		const char *connection, void **priv)
+{
+	struct ch341a_handle *ch341a = ch341a_open(log_cb);
+
+	if (is_err_ptr(ch341a))
+		return ptr_err(ch341a);
+
+	return ch341a_spi_init(spi_controller, log_cb, priv);
+}
+
+static int ch341a_spi_max_transfer(const struct spi_controller *spi_controller, void *priv)
 {
 	return CH341A_SPI_MAX;
 }
 
 const struct spi_controller ch341a_spi = {
 	.name = "ch341a",
+	.open = ch341a_spi_open,
 	.init = ch341a_spi_init,
-	.shutdown = ch341a_spi_shutdown,
+	.close = ch341a_spi_close,
+
 	.cs_assert = ch341a_cs_assert,
 	.cs_release = ch341a_cs_release,
 	.send_command = ch341a_spi_send_command,
 	.max_transfer = ch341a_spi_max_transfer,
-	.client = &ch341a_client,
 };

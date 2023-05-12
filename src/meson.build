@@ -36,7 +36,8 @@ configure_file(input : log_macros_tmpl,
 libch341a_sources = [ 'ch341a.c',
                       'ch341a_gpio.c',
                       'ch341a_spi.c',
-                      'ch341a_i2c.c'
+                      'ch341a_i2c.c',
+                      'ch347_spi.c'
                     ]
 
 conf_data = configuration_data()
@@ -58,12 +59,6 @@ conf_data.set('FUNC', '_log_var->log_cb')
 configure_file(input : log_macros_tmpl,
                output : 'ch341a_spi_log.h',
                configuration : conf_data)
-
-libch341a_sources = [ 'ch341a.c',
-                      'ch341a_gpio.c',
-                      'ch341a_spi.c',
-                      'ch341a_i2c.c'
-                    ]
 
 libch341a = shared_library('ch341a',
                            libch341a_sources,

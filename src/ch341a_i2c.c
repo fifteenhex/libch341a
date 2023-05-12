@@ -24,15 +24,11 @@
 static struct i2c_client i2cdev_client;
 
 static int ch341a_i2c_init(const struct i2c_controller *i2c_controller,
-						   int(*log_cb)(int level, const char *tag, const char *restrict format,...),
-						   const char *connection)
+			   int(*log_cb)(int level, const char *tag, const char *restrict format,...),
+			   void *priv)
 {
-	struct ch341a_handle *ch341a;
+	struct ch341a_handle *ch341a = priv;
 	int ret;
-
-	ch341a = ch341a_open(log_cb);
-	if (is_err_ptr(ch341a))
-		return ptr_err(ch341a);
 
 	//ret = ch341a_config_stream(ch341a, CH341A_STM_I2C_20K);
 	//ret = ch341a_config_stream(ch341a, CH341A_STM_I2C_100K);
@@ -44,6 +40,26 @@ static int ch341a_i2c_init(const struct i2c_controller *i2c_controller,
 	i2c_controller_set_priv(i2c_controller, ch341a);
 
 	ch341a_drain(ch341a);
+
+	return 0;
+}
+
+static int ch341a_i2c_open(const struct i2c_controller *i2c_controller,
+						   int(*log_cb)(int level, const char *tag, const char *restrict format,...),
+						   const char *connection, void **priv)
+{
+	struct ch341a_handle *ch341a;
+	int ret;
+
+	ch341a = ch341a_open(log_cb);
+	if (is_err_ptr(ch341a))
+		return ptr_err(ch341a);
+
+	ret = ch341a_i2c_init(i2c_controller, log_cb, ch341a);
+	if (ret)
+		return ret;
+
+	*priv = ch341a;
 
 	return 0;
 }
@@ -219,6 +235,7 @@ static struct libusrio_i2c_data ch341a_libusrio_data;
 
 const struct i2c_controller ch341a_i2c = {
 	.name = "ch341a",
+	.open = ch341a_i2c_open,
 	.init = ch341a_i2c_init,
 	.get_func = ch341a_get_func,
 	.do_transaction = ch341a_do_transaction,

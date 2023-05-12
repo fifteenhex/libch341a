@@ -24,18 +24,34 @@ int main (int argc, char **argv)
 {
 	int ret;
 
-	ret = spi_controller_init(&ch341a_spi, ch341a_log_cb, NULL);
-	if (ret)
-		return ret;
+	void *ch341a_mfd_priv;
 
-	struct ch341a_handle *ch341a = spi_controller_get_client_data(&ch341a_spi);
-	const struct gpio_controller *gpio = &ch341a_gpio;
+	ret = libusrio_mfd_open(&ch341a_mfd, ch341a_log_cb, NULL,
+			LIBUSRIO_MFD_WANTGPIO | LIBUSRIO_MFD_WANTSPI, &ch341a_mfd_priv);
+	if (ret) {
+		printf("Failed to open mfd: %d\n", ret);
+		return ret;
+	}
+
+	const struct gpio_controller *gpio;
+	ret = libusrio_mfd_get_gpio(&ch341a_mfd, ch341a_mfd_priv, &gpio);
+	if (ret) {
+		printf("Failed to open gpio: %d\n", ret);
+		return ret;
+	}
+
+	const struct spi_controller *spi;
+	ret = libusrio_mfd_get_spi(&ch341a_mfd, ch341a_mfd_priv, &spi);
+	if (ret) {
+		printf("Failed to open spi: %d\n", ret);
+		return ret;
+	}
 
 	/* set initial state for DC */
-	gpio_controller_set_value(gpio, ch341a, DC, 0);
+	gpio_controller_set_value(gpio, ch341a_mfd_priv, DC, 0);
 
 	struct gdew042c37_data display_data;
-	gdew042c37_new(&display_data, gpio, ch341a, &ch341a_spi, RESET, BUSY, DC);
+	gdew042c37_new(&display_data, gpio, ch341a_mfd_priv, spi, ch341a_mfd_priv, RESET, BUSY, DC);
 
 	if (ebogroll_reset(&gdew042c37, &display_data)) {
 		printf("failed to reset\n");
@@ -66,7 +82,7 @@ int main (int argc, char **argv)
 
 	ebogroll_power_down(&gdew042c37, &display_data);
 
-	spi_controller_shutdown(&ch341a_spi);
+	libusrio_mfd_close(&ch341a_mfd, ch341a_mfd_priv);
 
 	return 0;
 }
