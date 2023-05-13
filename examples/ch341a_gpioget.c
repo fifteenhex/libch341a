@@ -1,8 +1,6 @@
+//SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * gpioget.c
  *
- *  Created on: 13 May 2023
- *      Author: daniel
  */
 
 #include <stdio.h>
@@ -30,14 +28,9 @@ int main (int argc, char **argv)
 	libusrio_mfd_get_gpio(&ch341a_mfd, ch341a_mfd_priv, &gpio);
 
 	ret = libusrio_gpio_controller_get_info(gpio, ch341a_mfd_priv, &gpio_info);
-	if (ret ){
+	if (ret) {
 		printf("Failed to get gpio info\n");
 		return ret;
-	}
-
-	printf("xxx chip - %d lines:\n", gpio_info->num_lines);
-	for (int i = 0; i < gpio_info->num_lines; i++) {
-		printf("line\t%d:\n", gpio_info->lines[i].num);
 	}
 
 	libusrio_mfd_close(&ch341a_mfd, ch341a_mfd_priv);

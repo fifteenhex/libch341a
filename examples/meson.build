@@ -1,22 +1,24 @@
+argtable2 = dependency('argtable2')
+
 link_libs = [ libch341a ]
 
 gpioinfo = executable(
-    'gpioinfo', 'gpioinfo.c',
+    'ch341a_gpioinfo', 'ch341a_gpioinfo.c',
     include_directories : inc,
     link_with : link_libs,
     dependencies: libusrio_dep)
 
 gpioget = executable(
-    'gpioget', 'gpioget.c',
+    'ch341a_gpioget', 'ch341a_gpioget.c',
     include_directories : inc,
     link_with : link_libs,
-    dependencies: libusrio_dep)
+    dependencies: [libusrio_dep, argtable2])
 
 gpioset = executable(
-    'gpioset', 'gpioset.c',
+    'ch341a_gpioset', 'ch341a_gpioset.c',
     include_directories : inc,
     link_with : link_libs,
-    dependencies: libusrio_dep)
+    dependencies: [libusrio_dep, argtable2])
 
 probech341a = executable(
     'probech341a', 'probech341a.c',
