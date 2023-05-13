@@ -117,8 +117,31 @@ static int ch341a_gpio_get_value(const struct gpio_controller *gpio_controller,
 	return 0;
 }
 
+static int ch341a_gpio_get_info(const struct gpio_controller *gpio_controller, void *priv, struct gpio_controller_info **info)
+{
+	struct gpio_controller_info *ch341a_gpio_info =
+			malloc(flex_array_sz(ch341a_gpio_info, lines, CH341A_GPIO_LINES));
+
+	if (!info)
+		return -ENOMEM;
+
+	ch341a_gpio_info->num_lines = CH341A_GPIO_LINES;
+
+	for (int i = 0; i < ch341a_gpio_info->num_lines; i++) {
+		struct gpio_controller_line *line = &ch341a_gpio_info->lines[i];
+
+		line->num = i;
+	}
+
+	*info = ch341a_gpio_info;
+
+	return 0;
+}
+
 const struct gpio_controller ch341a_gpio = {
 	.set_dir = ch341a_gpio_set_dir,
 	.set_value = ch341a_gpio_set_value,
 	.get_value = ch341a_gpio_get_value,
+
+	.get_info = ch341a_gpio_get_info,
 };

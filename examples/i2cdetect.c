@@ -40,7 +40,7 @@ int main (int argc, char **argv)
 		printf("\n");
 	}
 
-	i2c_controller_shutdown(i2c_controller);
+	libusrio_mfd_close(&ch341a_mfd, ch341a_mfd_priv);
 
 	return 0;
 }
