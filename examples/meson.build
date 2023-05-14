@@ -2,6 +2,12 @@ argtable2 = dependency('argtable2')
 
 link_libs = [ libch341a ]
 
+probe = executable(
+    'ch341a_probe', 'ch341a_probe.c',
+    include_directories : inc,
+    link_with : link_libs,
+    dependencies: libusrio_dep)
+
 gpioinfo = executable(
     'ch341a_gpioinfo', 'ch341a_gpioinfo.c',
     include_directories : inc,
@@ -19,12 +25,6 @@ gpioset = executable(
     include_directories : inc,
     link_with : link_libs,
     dependencies: [libusrio_dep, argtable2])
-
-probech341a = executable(
-    'probech341a', 'probech341a.c',
-    include_directories : inc,
-    link_with : link_libs,
-    dependencies: libusrio_dep)
 
 i2cdetect = executable(
     'ch341a_i2cdetect', 'ch341a_i2cdetect.c',

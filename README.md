@@ -27,12 +27,15 @@ https://github.com/fifteenhex/libusrio
 Included are a set of hacky sample programs. Most of the are re-implementations
 of tools you'd normally use with an in-kernel driver:
 
+- ch341a_probe - Probe for supported device, print info
 - ch341a_i2cdetect - Like i2cdetect from i2c-utils
 - ch341a_i2cget - Like i2cget from i2c-utils
 - ch341a_i2cset - Like i2cset from i2c-utils
 - ch341a_gpioinfo - Like gpioinfo from gpiod
 - ch341a_gpioget - Like gpioget from gpiod
 - ch341a_gpioset - Like gpioset from gpiod
+- ch341a_spipipe - Like spi-pipe from spi-tools
+- spiepaper - Demo of using SPI + GPIOs to drive an SPI epaper.
 
 ## More info about the ch341a
 

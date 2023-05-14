@@ -51,7 +51,6 @@ static const struct ch341a_dev_entry devs_ch341a_spi[] = {
 		.ep_out = 0x06,
 		.ep_in = 0x86,
 		.is_ch347 = true,
-		.spi_controller = &ch347_spi,
 	},
 };
 
@@ -197,7 +196,6 @@ struct ch341a_handle *ch341a_open(int (*log_cb)(int level, const char *tag, cons
 		return err_ptr(-ENODEV);
 	}
 
-#ifdef __gnu_linux__
 	/* libusb_detach_kernel_driver() and friends basically only work on Linux. We simply try to detach on Linux
 	 * without a lot of passion here. If that works fine else we will fail on claiming the interface anyway. */
 	ret = libusb_detach_kernel_driver(ch341a->handle, 0);
@@ -207,7 +205,6 @@ struct ch341a_handle *ch341a_open(int (*log_cb)(int level, const char *tag, cons
 		ch341a_err(ch341a, "Failed to detach kernel driver: '%s'. Further accesses will probably fail.\n",
 			  libusb_error_name(ret));
 	}
-#endif
 
 	ret = libusb_claim_interface(ch341a->handle, 0);
 	if (ret != 0) {
