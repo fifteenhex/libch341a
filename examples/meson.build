@@ -44,6 +44,12 @@ i2cset = executable(
     link_with : link_libs,
     dependencies: libusrio_dep)
 
+spipipe = executable(
+    'ch341a_spipipe', 'ch341a_spipipe.c',
+    include_directories : inc,
+    link_with : link_libs,
+    dependencies: libusrio_dep)
+
 spiepaper = executable(
     'spiepaper', 'spiepaper.c',
     include_directories : inc,
