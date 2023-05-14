@@ -42,7 +42,11 @@ int ch341a_gpio_setbits(struct ch341a_handle *ch341a, uint8_t bits)
 		CH341A_CMD_UIO_STM_END
 	};
 
-	return ch341a_usb_transf(ch341a, __func__, BULK_WRITE_ENDPOINT, buf, 3);
+	int ret = ch341a_usb_transf(ch341a, __func__, BULK_WRITE_ENDPOINT, buf, 3);
+	if (ret < 0)
+		return ret;
+	else
+		return 0;
 }
 
 int ch341a_gpio_getbits(struct ch341a_handle *ch341a, uint8_t *data)

@@ -10,7 +10,11 @@
 #include <spi_controller.h>
 #include <gpio_controller.h>
 
+#include <unistd.h>
+
 #include "common.h"
+
+extern int ch341a_enable_pins(struct ch341a_handle *ch341a, bool enable);
 
 int main (int argc, char **argv)
 {
@@ -44,13 +48,16 @@ int main (int argc, char **argv)
 		int line;
 		int value;
 	};
+	unsigned int num_pairs = 0;
+
 	struct line_value_pair *line_value_pairs;
 	if (lines->count == 0) {
 		printf("need some line/value pairs\n");
 		return 1;
 	}
 	else {
-		line_value_pairs = malloc(sizeof(*line_value_pairs) * lines->count);
+		num_pairs = lines->count;
+		line_value_pairs = malloc(sizeof(*line_value_pairs) * num_pairs);
 		if (!line_value_pairs)
 			return 1;
 
@@ -76,15 +83,23 @@ int main (int argc, char **argv)
 		return ret;
 	}
 
+	// fixme: Should just make the pin that is needed an output
+	ch341a_enable_pins(ch341a_mfd_priv, true);
+
 	const struct gpio_controller *gpio;
 	libusrio_mfd_get_gpio(&ch341a_mfd, ch341a_mfd_priv, &gpio);
 
-	ret = libusrio_gpio_controller_get_info(gpio, ch341a_mfd_priv, &gpio_info);
-	if (ret) {
-		printf("Failed to get gpio info\n");
-		return ret;
+	for (int i = 0; i < num_pairs; i++) {
+		struct line_value_pair *lv = &line_value_pairs[i];
+		ret = gpio_controller_set_value(gpio, ch341a_mfd_priv,
+				lv->line, lv->value);
+		if (ret)
+			printf("Failed to set gpio value: %d\n", ret);
 	}
 
+	sleep(10);
+
+out:
 	libusrio_mfd_close(&ch341a_mfd, ch341a_mfd_priv);
 
 	return 0;
