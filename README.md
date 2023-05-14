@@ -67,3 +67,4 @@ http://www.wch-ic.com/products/CH347.html
 
 - Implement SPI
 - Work out if it's possible to get any gpio support
+  For mode 3 at least GPIO seems to be a hacked on by messing with the i2c bus?
