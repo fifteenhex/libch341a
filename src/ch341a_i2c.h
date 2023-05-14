@@ -16,11 +16,6 @@
 #define DEFAULT_CONFIGURATION		0x01
 #define DEFAULT_TIMEOUT			300    // 300mS for USB timeouts
 
-#define IN_BUF_SZ			0x100
-#define EEPROM_WRITE_BUF_SZ		0x2b   // only for 24c64 / 24c32 ??
-#define EEPROM_READ_BULKIN_BUF_SZ	0x20
-#define EEPROM_READ_BULKOUT_BUF_SZ	0x65
-
 /* Based on (closed-source) DLL V1.9 for USB by WinChipHead (c) 2005.
    Supports USB chips: CH341, CH341A
    This can be a problem for copyright, sure asbokid can't release this part on any GPL licence*/
@@ -32,9 +27,6 @@
 #define mCH341_ENDP_INTER_DOWN		0x01  /* This endpoint isn't list on my lsusb -v output, unused on the source*/
 #define mCH341_ENDP_DATA_UP		0x82  /* ==BULK_READ_ENDPOINT  Why repeat it?*/
 #define mCH341_ENDP_DATA_DOWN		0x02  /* ==BULK_WRITE_ENDPOINT Why repeat it?*/
-
-#define mCH341_VENDOR_READ		0xC0  /* Unused on the source*/
-#define mCH341_VENDOR_WRITE		0x40  /* Unused on the source*/
 
 #define mCH341_PARA_INIT		0xB1  /* Unused on the source*/
 #define mCH341_I2C_STATUS		0x52  /* Unused on the source*/
@@ -48,11 +40,7 @@
 
 #define mCH341A_CMD_SET_OUTPUT		0xA1  /* Unused on the source*/
 #define mCH341A_CMD_IO_ADDR		0xA2  /* Unused on the source*/
-#define mCH341A_CMD_PRINT_OUT		0xA3  /* Unused on the source*/
-#define mCH341A_CMD_SPI_STREAM		0xA8  /* Unused on the source*/
-#define mCH341A_CMD_SIO_STREAM		0xA9  /* Unused on the source*/
 #define mCH341A_CMD_I2C_STREAM		0xAA
-#define mCH341A_CMD_UIO_STREAM		0xAB  /* Unused on the source*/
 
 #define mCH341A_BUF_CLEAR		0xB2  /* Unused on the source*/
 #define mCH341A_I2C_CMD_X		0x54  /* Unused on the source*/

@@ -17,11 +17,16 @@
 #include <gpio_controller.h>
 
 #include "ch341a.h"
+#include "ch341a_gpio.h"
 
 #include "ch341a_gpio_log.h"
 
-#define CH341A_GPIO_LINES 8
+#define CH341A_GPIO_LINES		8
+#define CH341A_GPIO_OUTPUTS		6
 #define DIR_MASK			0x3F /* D6,D7 - input, D0-D5 - output */
+
+/* Bits that cannot be set i.e. dir or value */
+static const uint8_t ngbits = bit (7) | bit(6);
 
 int ch341a_gpio_setdir(struct ch341a_handle *ch341a)
 {
@@ -31,7 +36,7 @@ int ch341a_gpio_setdir(struct ch341a_handle *ch341a)
 		CH341A_CMD_UIO_STM_END
 	};
 
-	return ch341a_usb_transf(ch341a, __func__, BULK_WRITE_ENDPOINT, buf, 3);
+	return ch341a_usb_transf(ch341a, __func__, BULK_WRITE_ENDPOINT, buf, sizeof(buf));
 }
 
 int ch341a_gpio_setbits(struct ch341a_handle *ch341a, uint8_t bits)
@@ -42,7 +47,9 @@ int ch341a_gpio_setbits(struct ch341a_handle *ch341a, uint8_t bits)
 		CH341A_CMD_UIO_STM_END
 	};
 
-	int ret = ch341a_usb_transf(ch341a, __func__, BULK_WRITE_ENDPOINT, buf, 3);
+	assert(!(bits & ngbits));
+
+	int ret = ch341a_usb_transf(ch341a, __func__, BULK_WRITE_ENDPOINT, buf, sizeof(buf));
 	if (ret < 0)
 		return ret;
 	else
@@ -76,7 +83,7 @@ int ch341a_gpio_getbits(struct ch341a_handle *ch341a, uint8_t *data)
 int _ch341a_gpio_set_value(struct ch341a_handle *ch341a, int line, bool value)
 {
 	assert(ch341a);
-	assert(line < CH341A_GPIO_LINES);
+	assert(line < CH341A_GPIO_OUTPUTS);
 
 	uint8_t bit = (1 << line);
 
@@ -110,6 +117,8 @@ static int ch341a_gpio_get_value(const struct gpio_controller *gpio_controller,
 	struct ch341a_handle *ch341a = priv;
 	uint8_t value;
 	int ret;
+
+	assert(line < CH341A_GPIO_LINES);
 
 	ret = ch341a_gpio_getbits(ch341a, &value);
 	if (ret < 0)

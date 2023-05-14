@@ -27,19 +27,19 @@ probech341a = executable(
     dependencies: libusrio_dep)
 
 i2cdetect = executable(
-    'i2cdetect', 'i2cdetect.c',
+    'ch341a_i2cdetect', 'ch341a_i2cdetect.c',
     include_directories : inc,
     link_with : link_libs,
     dependencies: libusrio_dep)
 
 i2cget = executable(
-    'i2cget', 'i2cget.c',
+    'ch341a_i2cget', 'ch341a_i2cget.c',
     include_directories : inc,
     link_with : link_libs,
     dependencies: libusrio_dep)
 
 i2cset = executable(
-    'i2cset', 'i2cset.c',
+    'ch341a_i2cset', 'ch341a_i2cset.c',
     include_directories : inc,
     link_with : link_libs,
     dependencies: libusrio_dep)

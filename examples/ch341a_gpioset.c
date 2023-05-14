@@ -70,6 +70,12 @@ int main (int argc, char **argv)
 
 			line_value_pairs[i].line = (int) strtol(l, NULL, 0);
 			line_value_pairs[i].value = (int) strtol(v, NULL, 0);
+
+			if(line_value_pairs[i].line < 0 || line_value_pairs[i].line > 5) {
+				printf("Cannot set line: %d\n", line_value_pairs[i].line);
+				return 1;
+			}
+
 		}
 	}
 

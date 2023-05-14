@@ -20,6 +20,7 @@ struct ch341a_dev_entry {
 
 	bool is_ch347;
 
+	const struct gpio_controller *gpio_controller;
 	const struct spi_controller *spi_controller;
 };
 

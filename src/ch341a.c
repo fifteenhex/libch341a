@@ -11,6 +11,7 @@
 #include <dgputil.h>
 
 #include "ch341a.h"
+#include "ch341a_gpio.h"
 #include "ch341a_log.h"
 
 static const struct ch341a_dev_entry devs_ch341a_spi[] = {
@@ -22,13 +23,30 @@ static const struct ch341a_dev_entry devs_ch341a_spi[] = {
 		.ep_size = 32,
 		.ep_out = 0x02,
 		.ep_in = 0x82,
+		.gpio_controller = &ch341a_gpio,
 		.spi_controller = &ch341a_spi,
 	},
+	/* Mode 1/2 has no usable GPIO ? */
 	{
 		.vendor_id = 0x1a86,
 		.device_id = 0x55db,
 		.vendor_name = "WinChipHead (WCH)",
 		.device_name = "CH347 - Mode 1",
+		.ep_size = 512,
+		.ep_out = 0x06,
+		.ep_in = 0x86,
+		.is_ch347 = true,
+		.spi_controller = &ch347_spi,
+	},
+	/*
+	 * Mode 3 apparently has two usable GPIOs,
+	 * but maybe this is a hack on the I2C interface?
+	 */
+	{
+		.vendor_id = 0x1a86,
+		.device_id = 0x55dd,
+		.vendor_name = "WinChipHead (WCH)",
+		.device_name = "CH347 - Mode 3",
 		.ep_size = 512,
 		.ep_out = 0x06,
 		.ep_in = 0x86,
@@ -99,6 +117,7 @@ int ch341a_enable_pins(struct ch341a_handle *ch341a, bool enable)
 {
 	int ret;
 
+	// todo wtf is this?
 	const uint8_t buf[] = {
 		CH341A_CMD_UIO_STREAM,
 		CH341A_CMD_UIO_STM_OUT | 0x37, // CS high (all of them), SCK=0, DOUT*=1
@@ -263,7 +282,9 @@ static const struct i2c_controller *ch341a_mfd_get_i2c(const struct libusrio_mfd
 
 static const struct gpio_controller *ch341a_mfd_get_gpio(const struct libusrio_mfd *mfd, void* priv)
 {
-	return &ch341a_gpio;
+	struct ch341a_handle *ch341a = priv;
+
+	return ch341a->dev_info->gpio_controller;
 }
 
 static const struct spi_controller *ch341a_mfd_get_spi(const struct libusrio_mfd *mfd, void* priv)
