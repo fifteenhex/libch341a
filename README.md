@@ -20,6 +20,12 @@ https://github.com/fifteenhex/libusrio
 
 http://www.wch-ic.com/products/CH341.html
 
+| #  | name       | name on common programmer | # | name | name on common programmer |
+|----|------------|---------------------------|---|------|---------------------------|
+| 15 | D0 - GPIO0 | CS                        |   |      |                           |
+|    |            |                           |   |      |                           |
+|    |            |                           |   |      |                           |
+
 ## More info about the ch347
 
 The ch347 seems to be basically the same as the

@@ -97,7 +97,7 @@ int main (int argc, char **argv)
 			printf("Failed to set gpio value: %d\n", ret);
 	}
 
-	sleep(10);
+	//sleep(10);
 
 out:
 	libusrio_mfd_close(&ch341a_mfd, ch341a_mfd_priv);
