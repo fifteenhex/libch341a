@@ -152,7 +152,9 @@ static int ch341a_spi_open(
 	if (is_err_ptr(ch341a))
 		return ptr_err(ch341a);
 
-	return ch341a_spi_init(spi_controller, log_cb, priv);
+	*priv = ch341a;
+
+	return ch341a_spi_init(spi_controller, log_cb, *priv);
 }
 
 static int ch341a_spi_max_transfer(const struct spi_controller *spi_controller, void *priv)
