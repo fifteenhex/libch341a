@@ -30,7 +30,7 @@ int main (int argc, char **argv)
 		printf("%02x: ", i);
 		for (int j = 0; j <= 0xf; j++) {
 			uint8_t addr = i + j;
-			int ret = i2c_controller_ping(i2c_controller, addr);
+			int ret = i2c_controller_ping(i2c_controller, addr, ch341a_mfd_priv);
 
 			if (!ret)
 				printf("%02x ", addr);

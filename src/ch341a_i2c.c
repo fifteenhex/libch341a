@@ -21,8 +21,6 @@
 
 #define CH341A_MAX_RD (32 - 6)
 
-static struct i2c_client i2cdev_client;
-
 static int ch341a_i2c_init(const struct i2c_controller *i2c_controller,
 			   int(*log_cb)(int level, const char *tag, const char *restrict format,...),
 			   void *priv)
@@ -36,8 +34,6 @@ static int ch341a_i2c_init(const struct i2c_controller *i2c_controller,
 	//ret = ch341a_config_stream(ch341a, CH341A_STM_I2C_750K);
 	if (ret < 0)
 		return ret;
-
-	i2c_controller_set_priv(i2c_controller, ch341a);
 
 	ch341a_drain(ch341a);
 
@@ -79,9 +75,9 @@ static int ch341a_abort(struct ch341a_handle *ch341a)
 }
 
 static int ch341a_do_transaction(const struct i2c_controller *i2c_controller,
-		struct i2c_rdwr_ioctl_data *i2c_data)
+		struct i2c_rdwr_ioctl_data *i2c_data, void *priv)
 {
-	struct ch341a_handle *ch341a = i2c_controller_get_priv(i2c_controller);
+	struct ch341a_handle *ch341a = priv;
 	uint8_t packet[32] = { 0 };
 	uint8_t buff[32] = { 0 };
 	int pindex = 0;
@@ -210,9 +206,9 @@ static int ch341a_max_transfer(const struct i2c_controller *i2c_controller)
 	return 32 - 6;
 }
 
-static int ch341a_shutdown(const struct i2c_controller *i2c_controller)
+static int ch341a_shutdown(const struct i2c_controller *i2c_controller, void *priv)
 {
-	struct ch341a_handle *ch341a = i2c_controller_get_priv(i2c_controller);
+	struct ch341a_handle *ch341a = priv;
 
 	assert(ch341a);
 
@@ -231,7 +227,12 @@ static bool ch341a_does_not_stop_on_nak(const struct i2c_controller *i2c_control
 	return true;
 }
 
-static struct libusrio_i2c_data ch341a_libusrio_data;
+static struct libusrio_i2c_data *ch341a_get_libusrio_data(const struct i2c_controller *i2c_controller, void *priv)
+{
+	struct ch341a_handle *ch341a = priv;
+
+	return &ch341a->libusrio_i2c_data;
+}
 
 const struct i2c_controller ch341a_i2c = {
 	.name = "ch341a",
@@ -243,7 +244,5 @@ const struct i2c_controller ch341a_i2c = {
 
 	.max_transfer = ch341a_max_transfer,
 	.does_not_stop_on_nak = ch341a_does_not_stop_on_nak,
-
-	.client = &i2cdev_client,
-	._data = &ch341a_libusrio_data,
+	.get_libusrio_data = ch341a_get_libusrio_data,
 };

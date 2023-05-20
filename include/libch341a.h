@@ -31,6 +31,8 @@ struct ch341a_handle {
 	struct ch341a_gpio_state gpio_state;
 	const struct ch341a_dev_entry *dev_info;
 	unsigned int mfd_flags;
+
+	struct libusrio_i2c_data libusrio_i2c_data;
 };
 
 struct ch341a_handle *ch341a_open(int(*log_cb)(int level, const char *tag, const char *restrict format,...));
