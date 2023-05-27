@@ -172,7 +172,8 @@ struct ch341a_handle *ch341a_open(int (*log_cb)(int level, const char *tag, cons
 #if LIBUSB_API_VERSION >= 0x01000106
 	libusb_set_option(NULL, LIBUSB_OPTION_LOG_LEVEL, 3);
 #else
-	libusb_set_debug(NULL, 3); // Enable information, warning and error messages (only).
+	// Enable information, warning and error messages (only).
+	libusb_set_debug(NULL, 3);
 #endif
 
 	for (int i = 0; i < array_size(devs_ch341a_spi); i++) {
@@ -191,7 +192,7 @@ struct ch341a_handle *ch341a_open(int (*log_cb)(int level, const char *tag, cons
 		ch341a_err(ch341a, "Couldn't open device %04x:%04x.\n", vid, pid);
 	}
 
-	if (!ch341a) {
+	if (!ch341a->handle) {
 		ch341a_info(ch341a, "No CH341A-like device found\n");
 		return err_ptr(-ENODEV);
 	}
