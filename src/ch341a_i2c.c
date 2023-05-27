@@ -78,19 +78,16 @@ static int ch341a_do_transaction(const struct i2c_controller *i2c_controller,
 		struct i2c_rdwr_ioctl_data *i2c_data, void *priv)
 {
 	struct ch341a_handle *ch341a = priv;
-	uint8_t packet[32] = { 0 };
+	CMDBUFF(outpkt);
 	uint8_t buff[32] = { 0 };
-	int pindex = 0;
 	int msgs_done = 0;
+	bool isch347 = ch341a->dev_info->is_ch347;
+	int ret;
 
 	assert(ch341a);
 
-	packet[pindex++] = CH341A_CMD_I2C_STREAM;
-
 	for (int i = 0; i < i2c_data->nmsgs; i++) {
 		struct i2c_msg *msg = &i2c_data->msgs[i];
-		int plen = pindex;
-		int ret;
 		bool start = (msg->flags & I2C_M_NOSTART) ? false : true;
 		bool isread = (msg->flags & I2C_M_RD) ? true : false;
 		int outlen = !isread ? msg->len : 0;
@@ -98,18 +95,20 @@ static int ch341a_do_transaction(const struct i2c_controller *i2c_controller,
 		bool last = (i + 1 == i2c_data->nmsgs);
 		bool checkack = false;
 
+		cmdbuff_reset(&outpkt);
+		cmdbuff_push(&outpkt, CH341A_CMD_I2C_STREAM);
+
 		ch341a_i2c_dbg(ch341a, "msg %d/%d start %d read %d, size %d\n",
-				i + 1, i2c_data->nmsgs,start, isread, msg->len);
+				i + 1, i2c_data->nmsgs, start, isread, msg->len);
 
 		/*
 		 * Send start and address, address is sent with it's own OUT
 		 * so we get an ack status byte
 		 */
 		if (start) {
-			packet[plen++] = CH341A_CMD_I2C_STM_START;
-			packet[plen++] = CH341A_CMD_I2C_STM_OUT;
-			packet[plen++] = (msg->addr << 1) | (isread ? 1 : 0);
-
+			cmdbuff_push(&outpkt, CH341A_CMD_I2C_STM_START);
+			cmdbuff_push(&outpkt, CH341A_CMD_I2C_STM_OUT);
+			cmdbuff_push(&outpkt, (msg->addr << 1) | (isread ? 1 : 0));
 			checkack = true;
 			inlen++;
 		}
@@ -121,7 +120,7 @@ static int ch341a_do_transaction(const struct i2c_controller *i2c_controller,
 			for (int j = 0; j < msg->len; j++) {
 				/* Last byte in the whole transfer should be nacked */
 				bool nack = last && (j + 1 == msg->len);
-				packet[plen++] = CH341A_CMD_I2C_STM_IN | (!nack ? 1 : 0);
+				cmdbuff_push(&outpkt, CH341A_CMD_I2C_STM_IN | (!nack ? 1 : 0));
 			}
 		}
 		/*
@@ -129,19 +128,23 @@ static int ch341a_do_transaction(const struct i2c_controller *i2c_controller,
 		 * Note that the ch341a does not stop if it gets a nak. You must only
 		 * write a byte per message if you can't handle bytes after a nak still
 		 * being put on the bus
+		 *
+		 * For the ch347 every byte out gets it's ack checked
 		 */
 		else {
-			/* write buffer, can't check ack */
-			if (msg->flags & I2C_M_IGNORE_NAK) {
-				packet[plen++] = CH341A_CMD_I2C_STM_OUT | outlen;
+			if (isch347 || (msg->flags & I2C_M_IGNORE_NAK)) {
+				cmdbuff_push(&outpkt, CH341A_CMD_I2C_STM_OUT | outlen);
 				for (int j = 0; j < msg->len; j++)
-					packet[plen++] = msg->buf[j];
+					cmdbuff_push(&outpkt, msg->buf[j]);
+
+				if (isch347)
+					inlen++;
 			}
 			/* write byte with ack check */
 			else {
 				for (int j = 0; j < msg->len; j++) {
-					packet[plen++] = CH341A_CMD_I2C_STM_OUT;
-					packet[plen++] = msg->buf[j];
+					cmdbuff_push(&outpkt, CH341A_CMD_I2C_STM_OUT);
+					cmdbuff_push(&outpkt, msg->buf[j]);
 
 					assert(!checkack);
 					checkack = true;
@@ -151,42 +154,46 @@ static int ch341a_do_transaction(const struct i2c_controller *i2c_controller,
 		}
 
 		if (i + 1 == i2c_data->nmsgs)
-			packet[plen++] = CH341A_CMD_I2C_STM_STOP;
+			cmdbuff_push(&outpkt, CH341A_CMD_I2C_STM_STOP);
 
-		packet[plen++] = CH341A_CMD_I2C_STM_END;
+		cmdbuff_push(&outpkt, CH341A_CMD_I2C_STM_END);
 
-		assert(plen <= 32);
+		//fixme: write packet on ch347 should have the same out and in packet size?
+		//assert (!isch347 || (plen == inlen));
+		assert(cmdbuff_size(&outpkt) <= 32);
 
-		ret = ch341a_usb_transf(ch341a, __func__, BULK_WRITE_ENDPOINT, packet, plen);
+		ret = ch341a_usb_transf(ch341a, __func__, BULK_WRITE_ENDPOINT, cmdbuff_ptr(&outpkt), cmdbuff_size(&outpkt));
 		usleep(100);
 
 		/* Read back the result */
 		if (inlen) {
-			uint8_t *data;
-
 			assert(inlen <= sizeof(buff));
 
 			ret = ch341a_usb_transf(ch341a, __func__, BULK_READ_ENDPOINT, buff, inlen);
 			if (ret <= 0)
-				return ret;
+				goto abort;
+
+			ch341a_i2c_dbg(ch341a, "processing result, %d bytes in\n", inlen);
 
 			/* Check if there is an ack for the address */
-			data = buff;
+			uint8_t *data = buff;
 			if (checkack) {
 				uint8_t ackbyte = data[0];
 				ch341a_i2c_dbg(ch341a, "ack byte: %02x\n", ackbyte);
-				if ((ch341a->dev_info->is_ch347 && !(ackbyte && CH347_I2C_ACK)) ||
+				if ((isch347 && !(ackbyte && CH347_I2C_ACK)) ||
 						(!ch341a->dev_info->is_ch347 && (ackbyte & CH341A_I2C_NAK))) {
 					ch341a_i2c_dbg(ch341a, "NAK\n");
-					ch341a_abort(ch341a);
-					return -EIO;
+					ret = -EIO;
+					goto abort;
 				}
 
 				data++;
 			}
 
-			if (isread)
+			if (isread) {
+				ch341a_i2c_dbg(ch341a, "copying data to result\n");
 				memcpy(msg->buf, data, msg->len);
+			}
 		}
 
 		//return
@@ -195,6 +202,10 @@ static int ch341a_do_transaction(const struct i2c_controller *i2c_controller,
 	}
 
 	return msgs_done;
+
+abort:
+	ch341a_abort(ch341a);
+	return ret;
 }
 
 static int ch341a_max_transfer(const struct i2c_controller *i2c_controller)
